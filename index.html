@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>인천 섬 유래 지식고</title>
+  <!-- React 18 & Tailwind CSS & FontAwesome CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+    body { font-family: 'Noto Sans KR', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const defaultIslands = [
+      { id: 1, category: "current", name: "강화도", hanja: "江華島", region: "강화군", summary: "마니산과 고려 시대 호국 역사가 숨쉬는 인천 최대의 섬", origin: "고려 고종 때 '강해(江海)의 관문이자 민족의 화려한 요새'라는 뜻에서 강화(江華)라 부르기 시작했습니다.", lat: 37.746, lng: 126.488 },
+      { id: 2, category: "current", name: "영종도", hanja: "永宗島", region: "중구", summary: "인천국제공항이 위치한 세계적인 대한민국 관문 섬", origin: "긴 세월 동안 나라의 으뜸 터전이 되는 섬이라는 의미에서 '영종'이라 불리게 되었습니다.", lat: 37.492, lng: 126.489 },
+      { id: 3, category: "current", name: "백령도", hanja: "白翎島", region: "옹진군", summary: "서해 최북단의 섬이자 웅장한 두무진 절벽이 유명한 섬", origin: "섬 지형이 마치 흰 털을 가진 따오기가 날개를 펴고 나는 모습과 닮았다고 하여 명명되었습니다.", lat: 37.965, lng: 124.673 },
+      { id: 4, category: "current", name: "덕적도", hanja: "德積島", region: "옹진군", summary: "은빛 모래사장과 수령 백 년이 넘는 소나무 숲의 섬", origin: "주민들의 덕이 두텁게 쌓인 섬이라는 뜻으로 풍요로운 은혜를 상징합니다.", lat: 37.226, lng: 126.152 },
+      { id: 5, category: "current", name: "굴업도", hanja: "掘業島", region: "옹진군", summary: "한국의 갈라파고스라 불리는 천혜의 자연 섬", origin: "섬 전체 지형이 사람이 엎드려 일(굴업)을 하고 있는 형상과 같다고 하여 붙여진 이름입니다.", lat: 37.195, lng: 125.952 },
+      { id: 101, category: "past", name: "용유도", hanja: "龍遊島", region: "중구", summary: "영종도 신공항 매립 사업으로 합쳐진 옛 대표 섬", origin: "용이 노니는 모양을 닮았다 하여 용유도라 불렸으며, 인천국제공항 부지 매립으로 영종도와 하나가 되었습니다.", lat: 37.445, lng: 126.391 },
+      { id: 102, category: "past", name: "월미도", hanja: "月尾島", region: "중구", summary: "현재는 육지와 완전히 연결된 인천항 관문의 역사적 섬", origin: "섬 지형이 반달의 꼬리처럼 휘어져 있어 '월미도'라 불렸으며, 일제강점기 둑 건설과 매립으로 육지화되었습니다.", lat: 37.476, lng: 126.596 },
+      { id: 103, category: "past", name: "낙섬 (원도)", hanja: "落島 / 猿島", region: "미추홀구", summary: "현재 인천 용현동·학익동 매립지로 사라진 옛 서해 섬", origin: "조선시대 대원군이 유배되었던 섬으로, 1970년대 학익동 갯벌 매립 공사로 완전히 육지(용현동 일대)로 변했습니다.", lat: 37.451, lng: 126.645 }
+    ];
+
+    const defaultRegions = ["전체", "강화군", "옹진군", "중구", "미추홀구"];
+
+    const defaultUsers = [
+      { email: "admin@incheon.go.kr", pw: "admin1234", name: "관리자", isAdmin: true }
+    ];
+
+    function App() {
+      const [islands, setIslands] = useState(() => {
+        const saved = localStorage.getItem("incheon_islands_v5");
+        return saved ? JSON.parse(saved) : defaultIslands;
+      });
+
+      const [regions, setRegions] = useState(() => {
+        const saved = localStorage.getItem("incheon_regions_v5");
+        return saved ? JSON.parse(saved) : defaultRegions;
+      });
+
+      const [registeredUsers, setRegisteredUsers] = useState(() => {
+        const saved = localStorage.getItem("incheon_users_list_v5");
+        return saved ? JSON.parse(saved) : defaultUsers;
+      });
+
+      const [user, setUser] = useState(() => {
+        const saved = localStorage.getItem("incheon_user_v5");
+        return saved ? JSON.parse(saved) : null;
+      });
+
+      const [categoryFilter, setCategoryFilter] = useState("current");
+      const [selectedRegion, setSelectedRegion] = useState("전체");
+      const [searchTerm, setSearchTerm] = useState("");
+      const [selectedIsland, setSelectedIsland] = useState(null);
+
+      const [showAuthModal, setShowAuthModal] = useState(false);
+      const [authTab, setAuthTab] = useState("login");
+      const [authEmail, setAuthEmail] = useState("");
+      const [authPw, setAuthPw] = useState("");
+      const [authName, setAuthName] = useState("");
+
+      const [showAddModal, setShowAddModal] = useState(false);
+      const [deleteTargetId, setDeleteTargetId] = useState(null);
+
+      const [newIsland, setNewIsland] = useState({
+        category: "current", name: "", hanja: "", region: "강화군", customRegion: "", summary: "", origin: "", lat: 37.5, lng: 126.5
+      });
+
+      useEffect(() => {
+        localStorage.setItem("incheon_islands_v5", JSON.stringify(islands));
+      }, [islands]);
+
+      useEffect(() => {
+        localStorage.setItem("incheon_regions_v5", JSON.stringify(regions));
+      }, [regions]);
+
+      useEffect(() => {
+        localStorage.setItem("incheon_users_list_v5", JSON.stringify(registeredUsers));
+      }, [registeredUsers]);
+
+      useEffect(() => {
+        if (user) {
+          localStorage.setItem("incheon_user_v5", JSON.stringify(user));
+        } else {
+          localStorage.removeItem("incheon_user_v5");
+        }
+      }, [user]);
+
+      const handleAuthSubmit = (e) => {
+        e.preventDefault();
+        if (!authEmail || !authPw) return;
+
+        const targetEmail = authEmail.trim().toLowerCase();
+
+        if (authTab === "signup") {
+          const isExist = registeredUsers.some(u => u.email.toLowerCase() === targetEmail);
+          if (isExist) {
+            alert("이미 가입된 이메일(아이디)입니다. 다른 이메일을 사용해 주세요.");
+            return;
+          }
+
+          const newUserObj = {
+            email: targetEmail,
+            pw: authPw,
+            name: authName.trim() || targetEmail.split("@")[0],
+            isAdmin: targetEmail.includes("admin")
+          };
+
+          setRegisteredUsers([...registeredUsers, newUserObj]);
+          setUser(newUserObj);
+          alert(`회원가입 성공! 환영합니다, ${newUserObj.name}님.`);
+        } else {
+          const foundUser = registeredUsers.find(u => u.email.toLowerCase() === targetEmail && u.pw === authPw);
+          if (foundUser) {
+            setUser(foundUser);
+            alert(`로그인 되었습니다. (${foundUser.isAdmin ? "관리자 권한" : "일반 회원"})`);
+          } else {
+            alert("이메일 또는 비밀번호가 일치하지 않습니다.");
+            return;
+          }
+        }
+
+        setShowAuthModal(false);
+        setAuthEmail(""); setAuthPw(""); setAuthName("");
+      };
+
+      const handleLogout = () => {
+        setUser(null);
+      };
+
+      const handleReset = () => {
+        if (!user || !user.isAdmin) {
+          alert("데이터 초기화는 '관리자'만 가능합니다.");
+          return;
+        }
+        if (confirm("모든 섬 데이터를 초기 상태로 복원하시겠습니까?")) {
+          setIslands(defaultIslands);
+          setRegions(defaultRegions);
+          setSelectedRegion("전체");
+          setSelectedIsland(null);
+          localStorage.removeItem("incheon_islands_v5");
+          localStorage.removeItem("incheon_regions_v5");
+        }
+      };
+
+      const handleDeleteRegion = (e, reg) => {
+        e.stopPropagation();
+        if (reg === "전체") return;
+        if (!user || !user.isAdmin) {
+          alert("행정구역 삭제 권한이 없습니다. (관리자 전용)");
+          return;
+        }
+        setRegions(regions.filter(r => r !== reg));
+        if (selectedRegion === reg) setSelectedRegion("전체");
+      };
+
+      const handleAddIsland = (e) => {
+        e.preventDefault();
+        if (!user || !user.isAdmin) {
+          alert("섬 등록은 '관리자' 계정으로만 가능합니다.");
+          return;
+        }
+        if (!newIsland.name) return;
+
+        let targetRegion = newIsland.region;
+        if (targetRegion === "DIRECT_INPUT") {
+          targetRegion = newIsland.customRegion.trim() || "기타";
+        }
+
+        if (!regions.includes(targetRegion)) {
+          setRegions([...regions, targetRegion]);
+        }
+
+        const created = {
+          id: Date.now(),
+          category: newIsland.category,
+          name: newIsland.name,
+          hanja: newIsland.hanja || "未詳",
+          region: targetRegion,
+          summary: newIsland.summary || "새로 등록된 섬 정보입니다.",
+          origin: newIsland.origin || "유래 기록이 아직 등록되지 않았습니다.",
+          lat: parseFloat(newIsland.lat) || 37.5,
+          lng: parseFloat(newIsland.lng) || 126.5
+        };
+
+        setIslands([created, ...islands]);
+        setShowAddModal(false);
+        setNewIsland({ category: "current", name: "", hanja: "", region: "강화군", customRegion: "", summary: "", origin: "", lat: 37.5, lng: 126.5 });
+      };
+
+      const confirmDeleteIsland = () => {
+        if (!user || !user.isAdmin) {
+          alert("삭제 권한이 없습니다.");
+          setDeleteTargetId(null);
+          return;
+        }
+        if (!deleteTargetId) return;
+        setIslands(islands.filter(i => i.id !== deleteTargetId));
+        if (selectedIsland && selectedIsland.id === deleteTargetId) setSelectedIsland(null);
+        setDeleteTargetId(null);
+      };
+
+      const filtered = islands.filter(i => {
+        const matchCat = i.category === categoryFilter;
+        const matchReg = selectedRegion === "전체" || i.region === selectedRegion;
+        const matchSearch = i.name.includes(searchTerm) || i.hanja.includes(searchTerm) || i.origin.includes(searchTerm);
+        return matchCat && matchReg && matchSearch;
+      });
+
+      return (
+        <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+          {/* 상단 헤더 */}
+          <header className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 backdrop-blur-md shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-400">
+                <i className="fa-solid fa-anchor text-lg"></i>
+              </div>
+              <div>
+                <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-white">인천 섬 유래 지식고</h1>
+                <p className="text-xs text-slate-400 hidden sm:block">현재의 섬부터 사라진 옛 섬까지 아우르는 역사 지식 아카이브</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {user ? (
+                <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-xl text-xs sm:text-sm">
+                  <span className={`w-2 h-2 rounded-full ${user.isAdmin ? 'bg-amber-400' : 'bg-emerald-400'} animate-pulse`}></span>
+                  <span className="font-medium text-slate-200">
+                    {user.name} {user.isAdmin && <strong className="text-amber-400 text-xs ml-1">(관리자)</strong>}
+                  </span>
+                  <button onClick={handleLogout} title="로그아웃" className="text-slate-400 hover:text-red-400 ml-1">
+                    <i className="fa-solid fa-right-from-bracket"></i>
+                  </button>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => { setAuthTab("login"); setShowAuthModal(true); }}
+                  className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-400 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium flex items-center gap-1.5"
+                >
+                  <i className="fa-solid fa-user"></i>
+                  <span>로그인 / 회원가입</span>
+                </button>
+              )}
+
+              {user && user.isAdmin && (
+                <button onClick={handleReset} title="전체 데이터 초기화" className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 p-2 rounded-xl text-xs">
+                  <i className="fa-solid fa-rotate-right"></i>
+                </button>
+              )}
+
+              {user && user.isAdmin && (
+                <button 
+                  onClick={() => setShowAddModal(true)}
+                  className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 text-white px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-1.5 shadow-md"
+                >
+                  <i className="fa-solid fa-plus"></i>
+                  <span>섬 추가</span>
+                </button>
+              )}
+            </div>
+          </header>
+
+          {/* 카테고리 탭 */}
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => { setCategoryFilter("current"); setSelectedIsland(null); }}
+              className={`py-3 px-4 rounded-xl font-bold text-sm sm:text-base border transition flex items-center justify-center gap-2 ${
+                categoryFilter === "current" ? "bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-lg" : "bg-slate-900/60 border-slate-800 text-slate-400"
+              }`}
+            >
+              <i className="fa-solid fa-water"></i>
+              <span>현재의 섬</span>
+            </button>
+            <button
+              onClick={() => { setCategoryFilter("past"); setSelectedIsland(null); }}
+              className={`py-3 px-4 rounded-xl font-bold text-sm sm:text-base border transition flex items-center justify-center gap-2 ${
+                categoryFilter === "past" ? "bg-amber-500/20 border-amber-400 text-amber-300 shadow-lg" : "bg-slate-900/60 border-slate-800 text-slate-400"
+              }`}
+            >
+              <i className="fa-solid fa-landmark-flag"></i>
+              <span>옛날의 섬 (매립·연육)</span>
+            </button>
+          </div>
+
+          {/* 검색 및 행정구역 필터 */}
+          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 space-y-4">
+            <div className="relative">
+              <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+              <input 
+                type="text"
+                placeholder="섬 이름, 한자 또는 유래 검색..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-11 pr-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-cyan-500"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs sm:text-sm">
+              <span className="text-slate-400 font-medium shrink-0 flex items-center gap-1 mr-1">
+                <i className="fa-solid fa-filter text-cyan-500"></i> 행정구역:
+              </span>
+              {regions.map((reg) => {
+                const isSelected = selectedRegion === reg;
+                return (
+                  <div
+                    key={reg}
+                    onClick={() => setSelectedRegion(reg)}
+                    className={`cursor-pointer shrink-0 px-3 py-1.5 rounded-xl border font-medium flex items-center gap-1.5 ${
+                      isSelected ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300' : 'bg-slate-950 border-slate-800 text-slate-400'
+                    }`}
+                  >
+                    <span>{reg}</span>
+                    {reg !== "전체" && user && user.isAdmin && (
+                      <button onClick={(e) => handleDeleteRegion(e, reg)} className="hover:text-red-400 text-slate-500 pl-1" title="구역 삭제">
+                        <i className="fa-solid fa-xmark"></i>
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 목록 및 상세 정보 */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-5 space-y-3">
+              <div className="flex justify-between items-center text-xs text-slate-400 px-1">
+                <span>총 <strong>{filtered.length}</strong>개의 섬</span>
+                {!user?.isAdmin && <span className="text-slate-500 text-[11px]">* 데이터 수정은 관리자만 가능합니다.</span>}
+              </div>
+
+              {filtered.length === 0 ? (
+                <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-8 text-center text-slate-500 text-sm">
+                  해당 조건에 맞는 섬 정보가 없습니다.
+                </div>
+              ) : (
+                filtered.map((island) => {
+                  const isSelected = selectedIsland && selectedIsland.id === island.id;
+                  return (
+                    <div
+                      key={island.id}
+                      onClick={() => setSelectedIsland(island)}
+                      className={`cursor-pointer rounded-2xl p-4 border transition-all relative group ${
+                        isSelected ? 'bg-cyan-950/40 border-cyan-400 shadow-lg ring-1 ring-cyan-400/40' : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start gap-2">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-base font-bold text-white">{island.name}</h3>
+                            <span className="text-xs px-2 py-0.5 rounded bg-slate-800 text-cyan-300 font-serif">{island.hanja}</span>
+                            <span className="text-xs px-2 py-0.5 rounded bg-slate-950 text-slate-400">{island.region}</span>
+                          </div>
+                          <p className="text-xs text-slate-400 mt-2 line-clamp-2">{island.summary}</p>
+                        </div>
+                        
+                        {user && user.isAdmin && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setDeleteTargetId(island.id); }}
+                            className="opacity-60 group-hover:opacity-100 hover:text-red-400 text-slate-500 p-1.5"
+                            title="섬 삭제"
+                          >
+                            <i className="fa-regular fa-trash-can"></i>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="lg:col-span-7">
+              {selectedIsland ? (
+                <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-6 sticky top-6 backdrop-blur-md">
+                  <div className="border-b border-slate-800 pb-4">
+                    <span className="text-xs font-semibold px-2.5 py-1 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                      {selectedIsland.region}
+                    </span>
+                    <h2 className="text-2xl font-bold text-white mt-2 flex items-baseline gap-3">
+                      <span>{selectedIsland.name}</span>
+                      <span className="text-lg font-serif text-cyan-300 font-normal">({selectedIsland.hanja})</span>
+                    </h2>
+                  </div>
+
+                  <div>
+                    <h4 className="text-xs font-semibold text-slate-400 mb-2">지명 유래 및 역사 이야기</h4>
+                    <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-4 text-sm text-slate-300 leading-relaxed">
+                      {selectedIsland.origin}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <a
+                      href={`https://map.kakao.com/link/map/${selectedIsland.name},${selectedIsland.lat},${selectedIsland.lng}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex-1 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-semibold py-2.5 rounded-xl text-center flex items-center justify-center gap-1.5"
+                    >
+                      <i className="fa-solid fa-map-location-dot"></i> 카카오지도
+                    </a>
+                    <a
+                      href={`https://map.naver.com/v5/search/${selectedIsland.name}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex-1 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-semibold py-2.5 rounded-xl text-center flex items-center justify-center gap-1.5"
+                    >
+                      <i className="fa-solid fa-location-arrow"></i> 네이버지도
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-12 text-center text-slate-500 flex flex-col items-center justify-center h-full min-h-[300px]">
+                  <i className="fa-solid fa-compass text-4xl mb-3 text-slate-700"></i>
+                  <p className="text-sm">목록에서 섬을 선택하면 상세 유래가 표시됩니다.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 인증 모달 */}
+          {showAuthModal && (
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-sm space-y-4 shadow-2xl">
+                <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+                  <div className="flex gap-4">
+                    <button onClick={() => setAuthTab("login")} className={`font-bold text-sm ${authTab === "login" ? "text-cyan-400" : "text-slate-400"}`}>로그인</button>
+                    <button onClick={() => setAuthTab("signup")} className={`font-bold text-sm ${authTab === "signup" ? "text-cyan-400" : "text-slate-400"}`}>회원가입</button>
+                  </div>
+                  <button onClick={() => setShowAuthModal(false)} className="text-slate-400 hover:text-white"><i className="fa-solid fa-xmark"></i></button>
+                </div>
+                <form onSubmit={handleAuthSubmit} className="space-y-3">
+                  {authTab === "signup" && (
+                    <div>
+                      <label className="text-xs text-slate-400 block mb-1">사용자 이름</label>
+                      <input type="text" required value={authName} onChange={e => setAuthName(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200" />
+                    </div>
+                  )}
+                  <div>
+                    <label className="text-xs text-slate-400 block mb-1">이메일 주소 (아이디)</label>
+                    <input type="email" required value={authEmail} onChange={e => setAuthEmail(e.target.value)} placeholder="example@domain.com" className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-400 block mb-1">비밀번호</label>
+                    <input type="password" required value={authPw} onChange={e => setAuthPw(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200" />
+                  </div>
+                  <button type="submit" className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-2.5 rounded-xl text-sm transition mt-2">
+                    {authTab === "login" ? "로그인하기" : "중복 확인 및 가입하기"}
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* 섬 추가 모달 (관리자 전용) */}
+          {showAddModal && user?.isAdmin && (
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-md space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+                  <h3 className="font-bold text-white text-base">새로운 섬 등록 (관리자)</h3>
+                  <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-white"><i className="fa-solid fa-xmark"></i></button>
+                </div>
+                <form onSubmit={handleAddIsland} className="space-y-3 text-sm">
+                  <div>
+                    <label className="text-xs text-slate-400 block mb-1">분류</label>
+                    <select value={newIsland.category} onChange={e => setNewIsland({...newIsland, category: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200">
+                      <option value="current">현재의 섬</option>
+                      <option value="past">옛날의 섬</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-400 block mb-1">섬 이름 *</label>
+                    <input type="text" required value={newIsland.name} onChange={e => setNewIsland({...newIsland, name: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-400 block mb-1">한자 표기</label>
+                    <input type="text" value={newIsland.hanja} onChange={e => setNewIsland({...newIsland, hanja: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-400 block mb-1">행정구역</label>
+                    <select value={newIsland.region} onChange={e => setNewIsland({...newIsland, region: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200">
+                      {regions.filter(r => r !== "전체").map(r => <option key={r} value={r}>{r}</option>)}
+                      <option value="DIRECT_INPUT">+ 직접 입력</option>
+                    </select>
+                  </div>
+                  {newIsland.region === "DIRECT_INPUT" && (
+                    <div>
+                      <label className="text-xs text-slate-400 block mb-1">새 행정구역 이름 *</label>
+                      <input 
+                        type="text" 
+                        required
+                        value={newIsland.customRegion} 
+                        onChange={e => setNewIsland({...newIsland, customRegion: e.target.value})} 
+                        placeholder="예: 서구, 중구 등"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500" 
+                      />
+                    </div>
+                  )}
+                  <div>
+                    <label className="text-xs text-slate-400 block mb-1">한 줄 요약</label>
+                    <input type="text" value={newIsland.summary} onChange={e => setNewIsland({...newIsland, summary: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-400 block mb-1">지명 유래 상세</label>
+                    <textarea rows="3" value={newIsland.origin} onChange={e => setNewIsland({...newIsland, origin: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 resize-none"></textarea>
+                  </div>
+                  <button type="submit" className="w-full bg-cyan-500 hover:bg-cyan-400 font-bold py-2.5 rounded-xl text-slate-950 transition mt-2">등록하기</button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* 삭제 확인 모달 */}
+          {deleteTargetId && (
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-sm space-y-4 text-center shadow-2xl">
+                <h3 className="font-bold text-white text-base">정말 삭제하시겠습니까?</h3>
+                <div className="flex gap-2 pt-2">
+                  <button onClick={() => setDeleteTargetId(null)} className="flex-1 bg-slate-800 text-slate-300 py-2.5 rounded-xl text-xs font-semibold">취소</button>
+                  <button onClick={confirmDeleteIsland} className="flex-1 bg-red-500 text-slate-950 py-2.5 rounded-xl text-xs font-bold">삭제</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.render(<App />, document.getElementById("root"));
+  </script>
+</body>
+</html>
